@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,8 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Upload, X, ChevronDown } from "lucide-react";
+import { Plus, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/lib/axios";
 
@@ -22,28 +21,21 @@ const AddItem = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [itemNumber, setItemNumber] = useState("");
-  const [gender, setGender] = useState("unisex");
+  const [gender, setGender] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(0);
   const [cost, setCost] = useState(0);
   const [retailCost, setRetailCost] = useState(0);
   const [size, setSize] = useState("");
+  const [americanSize, setAmericanSize] = useState("");
+  const [GhanaSize, setGhanaSize] = useState("");
+  const [shoeStatus, setShoeStatus] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [images, setImages] = useState<Array<{ file: File; preview: string }>>([]);
   const { toast } = useToast();
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-  const typeOptions = [
-    "Men",
-    "Womens",
-    "Unisex",
-    "Children",
-    "Teen",
-    "Sneakers",
-    "Dress",
-    "Sandals",
-    "Boots",
-  ];
+  const genderOptions = ["Men", "Womens", "Unisex", "Children", "Teen"];
+  const shoeStatusOptions = ["Brand New", "Slightly Used", "Used"];
+  const typeOptions = ["Sneakers", "Dress", "Boots", "Sandals", "Sliders"];
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -82,24 +74,21 @@ const AddItem = () => {
     );
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        typeDropdownRef.current &&
-        !typeDropdownRef.current.contains(event.target as Node)
-      ) {
-        setTypeDropdownOpen(false);
-      }
-    };
+  const toggleGender = (genderValue: string) => {
+    setGender((prev) =>
+      prev.includes(genderValue)
+        ? prev.filter((g) => g !== genderValue)
+        : [...prev, genderValue]
+    );
+  };
 
-    if (typeDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [typeDropdownOpen]);
+  const toggleShoeStatus = (status: string) => {
+    setShoeStatus((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,11 +98,14 @@ const AddItem = () => {
       formData.append('name', name);
       formData.append('description', description);
       formData.append('itemNumber', itemNumber);
-      formData.append('Gender', gender);
+      formData.append('Gender', JSON.stringify(gender));
       formData.append('quantity', String(quantity));
       formData.append('cost', String(cost));
       formData.append('retailCost', String(retailCost));
       formData.append('size', size);
+      formData.append('AmericanSize', americanSize);
+      formData.append('GhanaianSize', GhanaSize);
+      formData.append('shoeStatus', JSON.stringify(shoeStatus));
       formData.append('type', JSON.stringify(selectedTypes));
       images.forEach((img, index) => {
         formData.append(`images`, img.file);
@@ -132,11 +124,14 @@ const AddItem = () => {
         setName("");
         setDescription("");
         setItemNumber("");
-        setGender("unisex");
+        setGender([]);
         setQuantity(0);
         setCost(0);
         setRetailCost(0);
         setSize("");
+        setAmericanSize("");
+        setGhanaSize("");
+        setShoeStatus([]);
         setSelectedTypes([]);
         setImages([]);
         setOpen(false);
@@ -221,7 +216,7 @@ const AddItem = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="cost">Cost ($)</Label>
+                  <Label htmlFor="cost">Cost (₵)</Label>
                   <Input
                     id="cost"
                     type="number"
@@ -234,7 +229,7 @@ const AddItem = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="retailCost">Retail Cost ($)</Label>
+                  <Label htmlFor="retailCost">Retail Cost (₵)</Label>
                   <Input
                     id="retailCost"
                     type="number"
@@ -247,7 +242,7 @@ const AddItem = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="size">Size</Label>
+                  <Label htmlFor="size">American Size</Label>
                   <Input
                     id="size"
                     value={size}
@@ -256,62 +251,72 @@ const AddItem = () => {
                     required
                   />
                 </div>
+               
+                <div className="grid gap-2">
+                  <Label htmlFor="GhanaSize">Ghana Size</Label>
+                  <Input
+                    id="GhanaSize"
+                    value={GhanaSize}
+                    onChange={(e) => setGhanaSize(e.target.value)}
+                    placeholder="e.g., 42, 43, etc."
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Shoe Status</Label>
+                  <div className="space-y-2">
+                    {shoeStatusOptions.map((status) => (
+                      <div key={status} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`status-${status}`}
+                          checked={shoeStatus.includes(status)}
+                          onChange={() => toggleShoeStatus(status)}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor={`status-${status}`} className="font-normal cursor-pointer">
+                          {status}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid gap-2">
                   <Label>Type</Label>
-                  <div className="relative" ref={typeDropdownRef}>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-between"
-                      onClick={() => setTypeDropdownOpen(!typeDropdownOpen)}
-                    >
-                      <span className="text-left">
-                        {selectedTypes.length === 0
-                          ? "Select types..."
-                          : `${selectedTypes.length} type${selectedTypes.length !== 1 ? "s" : ""} selected`}
-                      </span>
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          typeDropdownOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </Button>
-                    {typeDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {typeOptions.map((type) => (
-                          <label
-                            key={type}
-                            className="flex items-center p-2 hover:bg-accent cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedTypes.includes(type)}
-                              onChange={() => toggleType(type)}
-                              className="mr-2 h-4 w-4"
-                            />
-                            <span className="text-sm">{type}</span>
-                          </label>
-                        ))}
+                  <div className="space-y-2">
+                    {typeOptions.map((type) => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`type-${type}`}
+                          checked={selectedTypes.includes(type)}
+                          onChange={() => toggleType(type)}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor={`type-${type}`} className="font-normal cursor-pointer">
+                          {type}
+                        </Label>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label>Gender</Label>
-                  <RadioGroup value={gender} onValueChange={setGender}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="male" id="male" />
-                      <Label htmlFor="male" className="font-normal cursor-pointer">Male</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="female" id="female" />
-                      <Label htmlFor="female" className="font-normal cursor-pointer">Female</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="unisex" id="unisex" />
-                      <Label htmlFor="unisex" className="font-normal cursor-pointer">Unisex</Label>
-                    </div>
-                  </RadioGroup>
+                  <div className="space-y-2">
+                    {genderOptions.map((genderValue) => (
+                      <div key={genderValue} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`gender-${genderValue}`}
+                          checked={gender.includes(genderValue)}
+                          onChange={() => toggleGender(genderValue)}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor={`gender-${genderValue}`} className="font-normal cursor-pointer">
+                          {genderValue}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="image">Images</Label>

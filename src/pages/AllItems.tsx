@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,13 +32,17 @@ interface ShoeItem {
   name: string;
   description: string;
   itemNumber: string;
-  gender?: string;
+  gender?: string | string[];
+  Gender?: string[];
   quantity?: number;
   cost?: number;
   retailCost?: number;
   images: string | string[];
   size?: string;
   type?: string[];
+  shoeStatus?: string[];
+  AmericanSize?: string;
+  GhanaianSize?: string;
   createdAt: string;
 }
 
@@ -50,17 +53,25 @@ const AllItems = () => {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editItemNumber, setEditItemNumber] = useState("");
-  const [editGender, setEditGender] = useState("unisex");
+  const [editGender, setEditGender] = useState<string[]>([]);
   const [editQuantity, setEditQuantity] = useState(0);
   const [editCost, setEditCost] = useState(0);
   const [editRetailCost, setEditRetailCost] = useState(0);
   const [editSize, setEditSize] = useState("");
   const [editSelectedTypes, setEditSelectedTypes] = useState<string[]>([]);
+  const [editShoeStatus, setEditShoeStatus] = useState<string[]>([]);
+  const [editAmericanSize, setEditAmericanSize] = useState("");
+  const [editGhanaianSize, setEditGhanaianSize] = useState("");
   const [editTypeDropdownOpen, setEditTypeDropdownOpen] = useState(false);
+  const [editShoeStatusDropdownOpen, setEditShoeStatusDropdownOpen] = useState(false);
+  const [editGenderDropdownOpen, setEditGenderDropdownOpen] = useState(false);
   const [editImages, setEditImages] = useState<string[]>([]);
   const [editImageFiles, setEditImageFiles] = useState<Array<{ file: File; preview: string }>>([]);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const shoeStatusDropdownRef = useRef<HTMLDivElement>(null);
+  const genderDropdownRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [conversionRate, setConversionRate] = useState<number>(0);
 
   const typeOptions = [
     "Men",
@@ -73,6 +84,8 @@ const AllItems = () => {
     "Sandals",
     "Boots",
   ];
+  const genderOptions = ["Men", "Womens", "Unisex", "Children", "Teen"];
+  const shoeStatusOptions = ["Brand New", "Slightly Used", "Used"];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,16 +95,28 @@ const AllItems = () => {
       ) {
         setEditTypeDropdownOpen(false);
       }
+      if (
+        shoeStatusDropdownRef.current &&
+        !shoeStatusDropdownRef.current.contains(event.target as Node)
+      ) {
+        setEditShoeStatusDropdownOpen(false);
+      }
+      if (
+        genderDropdownRef.current &&
+        !genderDropdownRef.current.contains(event.target as Node)
+      ) {
+        setEditGenderDropdownOpen(false);
+      }
     };
 
-    if (editTypeDropdownOpen) {
+    if (editTypeDropdownOpen || editShoeStatusDropdownOpen || editGenderDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [editTypeDropdownOpen]);
+  }, [editTypeDropdownOpen, editShoeStatusDropdownOpen, editGenderDropdownOpen]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -110,7 +135,32 @@ const AllItems = () => {
       }
     };
 
+    const fetchConversionRate = async () => {
+      try {
+        const response = await axiosInstance.get('/conversion-rate');
+        if (response.data.success && response.data.rate) {
+          setConversionRate(response.data.rate);
+        } else if (response.data?.rate) {
+          setConversionRate(response.data.rate);
+        }
+      } catch (error) {
+        console.error("Failed to fetch conversion rate:", error);
+        // Try alternative endpoint
+        try {
+          const altResponse = await axiosInstance.get('/exchange-rate');
+          if (altResponse.data?.rate) {
+            setConversionRate(altResponse.data.rate);
+          }
+        } catch (altError) {
+          console.error("Failed to fetch exchange rate:", altError);
+          // Use a default rate if API fails (GHS to USD, approximate)
+          setConversionRate(12.0);
+        }
+      }
+    };
+
     fetchItems();
+    fetchConversionRate();
   }, [toast]);
 
   const handleDelete = async () => {
@@ -144,12 +194,24 @@ const AllItems = () => {
     setEditName(item.name);
     setEditDescription(item.description);
     setEditItemNumber(item.itemNumber);
-    setEditGender(item.gender || "unisex");
+    // Handle Gender - can be string, string[], or in Gender field
+    if (item.Gender && Array.isArray(item.Gender)) {
+      setEditGender(item.Gender);
+    } else if (Array.isArray(item.gender)) {
+      setEditGender(item.gender);
+    } else if (typeof item.gender === 'string') {
+      setEditGender([item.gender]);
+    } else {
+      setEditGender([]);
+    }
     setEditQuantity(item.quantity || 0);
     setEditCost(item.cost || 0);
     setEditRetailCost(item.retailCost || 0);
     setEditSize(item.size || "");
     setEditSelectedTypes(item.type || []);
+    setEditShoeStatus(item.shoeStatus || []);
+    // setEditAmericanSize(item.size || "");
+    setEditGhanaianSize(item.GhanaianSize || "");
     // Handle images - can be string or string array
     if (Array.isArray(item.images)) {
       setEditImages(item.images);
@@ -162,9 +224,9 @@ const AllItems = () => {
   const handleEditImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const fileArray = Array.from(files);
+      const fileArray = Array.from(files) as File[];
       
-      const imagePromises = fileArray.map((file) => {
+      const imagePromises = fileArray.map((file: File) => {
         return new Promise<{ file: File; preview: string }>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -196,6 +258,22 @@ const AllItems = () => {
     );
   };
 
+  const toggleEditGender = (genderValue: string) => {
+    setEditGender((prev) =>
+      prev.includes(genderValue)
+        ? prev.filter((g) => g !== genderValue)
+        : [...prev, genderValue]
+    );
+  };
+
+  const toggleEditShoeStatus = (status: string) => {
+    setEditShoeStatus((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editItem) return;
@@ -216,9 +294,12 @@ const AllItems = () => {
         changedValues.itemNumber = editItemNumber;
         formData.append('itemNumber', editItemNumber);
       }
-      if (editGender !== editItem.gender) {
+      // Handle Gender array
+      const currentGender = editItem.Gender || (Array.isArray(editItem.gender) ? editItem.gender : (editItem.gender ? [editItem.gender] : []));
+      const genderChanged = JSON.stringify(editGender.sort()) !== JSON.stringify(currentGender.sort());
+      if (genderChanged) {
         changedValues.Gender = editGender;
-        formData.append('Gender', editGender);
+        formData.append('Gender', JSON.stringify(editGender));
       }
       if (editQuantity !== editItem.quantity) {
         changedValues.quantity = editQuantity;
@@ -235,6 +316,22 @@ const AllItems = () => {
       if (editSize !== (editItem.size || "")) {
         changedValues.size = editSize;
         formData.append('size', editSize);
+      }
+      if (editAmericanSize !== (editItem.AmericanSize || "")) {
+        changedValues.AmericanSize = editAmericanSize;
+        formData.append('americanSize', editAmericanSize);
+      }
+      if (editGhanaianSize !== (editItem.GhanaianSize || "")) {
+        changedValues.GhanaianSize = editGhanaianSize;
+        formData.append('GhanaSize', editGhanaianSize);
+      }
+      
+      // Handle shoeStatus array
+      const currentShoeStatus = editItem.shoeStatus || [];
+      const shoeStatusChanged = JSON.stringify(editShoeStatus.sort()) !== JSON.stringify(currentShoeStatus.sort());
+      if (shoeStatusChanged) {
+        changedValues.shoeStatus = editShoeStatus;
+        formData.append('shoeStatus', JSON.stringify(editShoeStatus));
       }
       
       // Handle type array
@@ -278,6 +375,10 @@ const AllItems = () => {
         setEditItem(null);
         setEditImages([]);
         setEditImageFiles([]);
+        setEditGender([]);
+        setEditShoeStatus([]);
+        setEditAmericanSize("");
+        setEditGhanaianSize("");
       }
     } catch (error: any) {
       toast({
@@ -348,11 +449,28 @@ const AllItems = () => {
               <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                 {item.description}
               </p>
-              <div className="flex items-center justify-between gap-2">
-                <Badge variant="secondary">{item.itemNumber}</Badge>
-                {item.cost !== undefined && item.cost !== null && (
-                  <span className="text-sm font-semibold text-foreground">${Number(item.cost).toFixed(2)}</span>
-                )}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="secondary">{item.itemNumber}</Badge>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {item.cost !== undefined && item.cost !== null && conversionRate > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Cost:</span>
+                      <span className="text-sm font-semibold text-foreground">
+                        ${(Number(item.cost) / conversionRate).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {item.retailCost !== undefined && item.retailCost !== null && conversionRate > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Retail Cost:</span>
+                      <span className="text-sm font-semibold text-foreground">
+                        ${(Number(item.retailCost) / conversionRate).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
             <CardFooter className="p-4 pt-0">
@@ -431,7 +549,7 @@ const AllItems = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-cost">Cost ($)</Label>
+                <Label htmlFor="edit-cost">Cost (₵)</Label>
                 <Input
                   id="edit-cost"
                   type="number"
@@ -443,7 +561,7 @@ const AllItems = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-retailCost">Retail Cost ($)</Label>
+                <Label htmlFor="edit-retailCost">Retail Cost (₵)</Label>
                 <Input
                   id="edit-retailCost"
                   type="number"
@@ -454,7 +572,7 @@ const AllItems = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-size">Size</Label>
+                <Label htmlFor="edit-size">American Size</Label>
                 <Input
                   id="edit-size"
                   value={editSize}
@@ -504,20 +622,93 @@ const AllItems = () => {
               </div>
               <div className="grid gap-2">
                 <Label>Gender</Label>
-                <RadioGroup value={editGender} onValueChange={setEditGender}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="male" id="edit-male" />
-                    <Label htmlFor="edit-male" className="font-normal cursor-pointer">Male</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="female" id="edit-female" />
-                    <Label htmlFor="edit-female" className="font-normal cursor-pointer">Female</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="unisex" id="edit-unisex" />
-                    <Label htmlFor="edit-unisex" className="font-normal cursor-pointer">Unisex</Label>
-                  </div>
-                </RadioGroup>
+                <div className="relative" ref={genderDropdownRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() => setEditGenderDropdownOpen(!editGenderDropdownOpen)}
+                  >
+                    <span className="text-left">
+                      {editGender.length === 0
+                        ? "Select gender..."
+                        : editGender.join(", ")}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        editGenderDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Button>
+                  {editGenderDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {genderOptions.map((genderValue) => (
+                        <label
+                          key={genderValue}
+                          className="flex items-center p-2 hover:bg-accent cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editGender.includes(genderValue)}
+                            onChange={() => toggleEditGender(genderValue)}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <span className="text-sm">{genderValue}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Shoe Status</Label>
+                <div className="relative" ref={shoeStatusDropdownRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() => setEditShoeStatusDropdownOpen(!editShoeStatusDropdownOpen)}
+                  >
+                    <span className="text-left">
+                      {editShoeStatus.length === 0
+                        ? "Select shoe status..."
+                        : editShoeStatus.join(", ")}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        editShoeStatusDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Button>
+                  {editShoeStatusDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {shoeStatusOptions.map((status) => (
+                        <label
+                          key={status}
+                          className="flex items-center p-2 hover:bg-accent cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editShoeStatus.includes(status)}
+                            onChange={() => toggleEditShoeStatus(status)}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <span className="text-sm">{status}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-ghanaianSize">Ghanaian Size</Label>
+                <Input
+                  id="edit-ghanaianSize"
+                  value={editGhanaianSize}
+                  onChange={(e) => setEditGhanaianSize(e.target.value)}
+                  placeholder="e.g., 42, 43, etc."
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-images">Images</Label>
