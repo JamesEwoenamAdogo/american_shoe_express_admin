@@ -9,12 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Package,
-  Clock,
-  DollarSign,
-  Calendar,
-} from "lucide-react";
+import { Package, Clock, DollarSign, Calendar } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -30,6 +25,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import axios from "axios";
 
 interface OrderItem {
   itemNumber: string;
@@ -51,48 +47,49 @@ interface Order {
   status: "Pending" | "Completed" | "Cancelled" | "Packaged" | "Shipped";
 }
 
-// Dummy orders
-const dummyOrders: Order[] = [
-  {
-    _id: "1",
-    id: "ORD-001",
-    name: "John Doe",
-    phone: "0244000000",
-    items: [
-      { itemNumber: "1", name: "Running Shoes", quantity: 2, price: 250 },
-      { itemNumber: "2", name: "Socks", quantity: 5, price: 20 },
-      { itemNumber: "3", name: "T-Shirt", quantity: 1, price: 50 },
-    ],
-    total: 250 * 2 + 5 * 20 + 50,
-    location: "Accra",
-    orderMode: "Delivery",
-    date: new Date().toISOString(),
-    status: "Pending",
-  },
-  {
-    _id: "2",
-    id: "ORD-002",
-    name: "Jane Smith",
-    phone: "0244111111",
-    items: [
-      { itemNumber: "1", name: "Sneakers", quantity: 1, price: 300 },
-      { itemNumber: "2", name: "Laces", quantity: 2, price: 10 },
-    ],
-    total: 300 + 2 * 10,
-    location: "Kumasi",
-    orderMode: "Pickup",
-    date: new Date().toISOString(),
-    status: "Packaged",
-  },
-];
-
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [exchangeRate, setExchangeRate] = useState<number>(0);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [todaysEarnings, setTodaysEarnings] = useState<number>(0);
+  const [todaysOrders, setTodaysOrders] = useState<number>(0);
+  const [monthlyEarnings, setMonthlyEarnings] = useState<number>(0);
+  const [monthlyOrders, setMonthlyOrders] = useState<number>(0);
+  const [weeklyOrders, setWeeklyOrders] = useState<number>(0);
 
+
+
+
+  // Fetch Orders
   useEffect(() => {
-    setOrders(dummyOrders);
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get("/all-orders");
+        const allOrders = response?.data?.allOrders ?? [];
+
+        // Normalize if necessary
+        const formattedOrders = allOrders.map((order: any) => ({
+          _id: order._id ?? "",
+          id: order.id ?? "",
+          name: order.name ?? "",
+          phone: order.phone ?? "",
+          items: order.items ?? [],
+          total: order.total ?? 0,
+          location: order.location ?? "",
+          orderMode: order.orderMode ?? "",
+          date: order.date ?? new Date().toISOString(),
+          status: order.status ?? "Pending",
+        }));
+
+        setOrders(formattedOrders);
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     const fetchExchangeRate = async () => {
       try {
@@ -103,10 +100,45 @@ const OrdersPage = () => {
         setExchangeRate(data.rates.USD);
       } catch (error) {
         console.error("Failed to fetch exchange rate:", error);
-        setExchangeRate(0);
       }
     };
-    fetchExchangeRate();
+
+    const fetchDailyEarnings = async () => {
+    try {
+      const response = await axios.get("/daily-earnings-and-orders");
+      setTodaysEarnings(response.data.totalEarnings ?? 0);
+      setTodaysOrders(response.data.totalOrders ?? 0);
+    } catch (error) {
+      console.error("Failed to fetch today's earnings:", error);
+    }
+  };
+
+  const fetchMonthlyEarnings = async () => {
+    try {
+      const response = await axios.get("/monthly-earnings-and-orders");
+      setMonthlyEarnings(response.data.totalEarnings ?? 0);
+      setMonthlyOrders(response.data.totalOrders ?? 0);
+    } catch (error) {
+      console.error("Failed to fetch monthly earnings:", error);
+    }
+  };
+  const fetchWeeklyOrders = async () => {
+    try {
+      const response = await axios.get("/weekly-orders");
+      setWeeklyOrders(response.data.totalOrders ?? 0);
+    } catch (error) {
+      console.error("Failed to fetch weekly orders:", error);
+    }
+  };
+
+  // fetchOrders();
+  // fetchExchangeRate();
+  
+  fetchOrders();
+  fetchExchangeRate();
+  fetchDailyEarnings();
+  fetchMonthlyEarnings();
+  fetchWeeklyOrders();
   }, []);
 
   const convertToUSD = (value: number) =>
@@ -122,11 +154,6 @@ const OrdersPage = () => {
     };
     return <Badge variant={variants[status] as any}>{status}</Badge>;
   };
-
-  const todayTotal = 1000;
-  const todayOrdersCount = 5;
-  const monthTotal = 4000;
-  const monthOrdersCount = 20;
 
   const handlePrint = (order: Order) => {
     const printContent = `
@@ -198,11 +225,21 @@ const OrdersPage = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg font-medium text-gray-500">Loading orders...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">Orders Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-2">Track and manage customer orders</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Track and manage customer orders
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -214,11 +251,15 @@ const OrdersPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₵{todayTotal} (~<span className="text-red-700">${convertToUSD(todayTotal)}</span>)
+              ₵{todaysEarnings.toFixed(2)} (~
+              <span className="text-red-700">${convertToUSD(todaysEarnings)}</span>)
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{todayOrdersCount} orders today</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {todaysOrders} orders today
+            </p>
           </CardContent>
         </Card>
+
 
         <Card>
           <CardHeader className="flex justify-between pb-2">
@@ -227,11 +268,15 @@ const OrdersPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₵{monthTotal} (~<span className="text-red-700">${convertToUSD(monthTotal)}</span>)
+              ₵{monthlyEarnings.toFixed(2)} (~
+              <span className="text-red-700">${convertToUSD(monthlyEarnings)}</span>)
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{monthOrdersCount} orders this month</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {monthlyOrders} orders this month
+            </p>
           </CardContent>
         </Card>
+
 
         <Card>
           <CardHeader className="flex justify-between pb-2">
@@ -239,19 +284,19 @@ const OrdersPage = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayOrdersCount}</div>
+            <div className="text-2xl font-bold">{todaysOrders}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex justify-between pb-2">
             <CardTitle className="text-sm font-medium">This Week</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{monthOrdersCount}</div>
+            <div className="text-2xl font-bold">{weeklyOrders}</div>
           </CardContent>
         </Card>
+
       </div>
 
       {/* Orders Table */}
@@ -279,8 +324,12 @@ const OrdersPage = () => {
                 {orders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell>{order.id}</TableCell>
-                    <TableCell>{order.items.map((i) => i.itemNumber).join(", ")}</TableCell>
-                    <TableCell>{order.items.map((i) => i.name).join(", ")}</TableCell>
+                    <TableCell>
+                      {order.items.map((i) => i.itemNumber).join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      {order.items.map((i) => i.name).join(", ")}
+                    </TableCell>
                     <TableCell>{order.name}</TableCell>
                     <TableCell>{order.phone}</TableCell>
                     <TableCell>{order.location}</TableCell>
@@ -304,10 +353,17 @@ const OrdersPage = () => {
                           <SelectItem value="Cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button size="sm" onClick={() => setSelectedOrder(order)}>
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedOrder(order)}
+                      >
                         View Details
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handlePrint(order)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePrint(order)}
+                      >
                         Print
                       </Button>
                     </TableCell>
@@ -323,7 +379,9 @@ const OrdersPage = () => {
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>
+              Order Details - {selectedOrder?.id}
+            </DialogTitle>
             <DialogDescription>Complete order information</DialogDescription>
           </DialogHeader>
           {selectedOrder && (
@@ -349,7 +407,9 @@ const OrdersPage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Date:</span>
-                  <span>{new Date(selectedOrder.date).toLocaleString()}</span>
+                  <span>
+                    {new Date(selectedOrder.date).toLocaleString()}
+                  </span>
                 </div>
               </div>
 
@@ -372,7 +432,9 @@ const OrdersPage = () => {
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell>₵{item.price}</TableCell>
-                        <TableCell>₵{(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell>
+                          ₵{(item.price * item.quantity).toFixed(2)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -381,7 +443,9 @@ const OrdersPage = () => {
 
               <div className="border-t pt-4 flex justify-between items-center">
                 <span className="text-lg font-bold">Total:</span>
-                <span className="text-lg font-bold">₵{selectedOrder.total.toFixed(2)}</span>
+                <span className="text-lg font-bold">
+                  ₵{selectedOrder.total.toFixed(2)}
+                </span>
               </div>
             </div>
           )}

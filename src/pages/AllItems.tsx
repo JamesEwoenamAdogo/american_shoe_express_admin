@@ -413,17 +413,17 @@ const AllItems = () => {
 
     <div className="overflow-x-auto mt-6">
   <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
-    <thead className="bg-gray-500 text-white">
+    <thead className="bg-gray-200 text-white">
       <tr>
-        <th className="px-4 py-2 text-left font-light">Image</th>
-        <th className="px-4 py-2 text-left font-light">Item No.</th>
-        <th className="px-7 py-2 text-left font-light">Name</th>
-        <th className="px-4 py-2 text-left font-light">Gender</th>
-        <th className="px-4 py-2 text-left font-light">Type</th>
-        <th className="px-4 py-2 text-left font-light">Size</th>
-        <th className="px-4 py-2 text-left font-light">Price</th>
-        <th className="px-1 py-2 text-left font-light">Date Added</th>
-        <th className="px-4 py-2 text-center font-light">Actions</th>
+        <th className="px-4 py-2 text-left font-light text-black">Image</th>
+        <th className="px-4 py-2 text-left font-light  text-black">Item No.</th>
+        <th className="px-7 py-2 text-left font-light  text-black">Name</th>
+        <th className="px-4 py-2 text-left font-light  text-black">Gender</th>
+        <th className="px-4 py-2 text-left font-light  text-black">Type</th>
+        <th className="px-4 py-2 text-left font-light  text-black">Size</th>
+        <th className="px-4 py-2 text-left font-light  text-black">Price</th>
+        <th className="px-1 py-2 text-left font-light  text-black">Date Added</th>
+        <th className="px-4 py-2 text-center font-light  text-black">Actions</th>
       </tr>
     </thead>
     <tbody>

@@ -3,13 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AdminLayout } from "./components/AdminLayout";
+import AdminLayout from "./components/AdminLayout";
 import Revenue from "./pages/Revenue";
 import AddItem from "./pages/AddItem";
 import AllItems from "./pages/AllItems";
 import Orders from "./pages/Orders";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import CommentPage from "./pages/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route element={<ProtectedRoute><AdminLayout><Orders /></AdminLayout></ProtectedRoute>} path="/orders" />
           <Route element={<ProtectedRoute><AdminLayout><AddItem /></AdminLayout></ProtectedRoute>} path="/add-item" />
           <Route element={<ProtectedRoute><AdminLayout><AllItems /></AdminLayout></ProtectedRoute>} path="/all-items" />
+          <Route element={<ProtectedRoute><AdminLayout><CommentPage /></AdminLayout></ProtectedRoute>} path="/messages" />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

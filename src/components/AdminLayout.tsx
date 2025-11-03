@@ -1,30 +1,32 @@
-import { ReactNode } from "react";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Boxes,
+  MessageSquare,
+  LogOut
+} from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, Plus, ShoppingCart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Revenue", url: "/", icon: LayoutDashboard },
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Add New Item", url: "/add-item", icon: Plus },
-  { title: "All Items", url: "/all-items", icon: Package },
-];
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
 
-export function AdminLayout({ children }: { children: ReactNode }) {
+const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const navItems = [
+    { name: "Revenue", icon: <LayoutDashboard className="w-5 h-5" />, path: "/" },
+    { name: "Orders", icon: <Package className="w-5 h-5" />, path: "/orders" },
+    { name: "Add Item", icon: <ShoppingCart className="w-5 h-5" />, path: "/add-item" },
+    { name: "All Items", icon: <Boxes className="w-5 h-5" />, path: "/all-items" },
+    { name: "Messages", icon: <MessageSquare className="w-5 h-5" />, path: "/messages" },
+  ];
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
@@ -36,57 +38,73 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar collapsible="icon">
-          <SidebarContent>
-            <div className="p-4 md:p-6 border-b border-sidebar-border">
-              <h1 className="text-lg md:text-xl font-bold text-sidebar-foreground">Shoe Admin</h1>
-            </div>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/"}
-                          className={({ isActive }) =>
-                            isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : "hover:bg-sidebar-accent/50"
-                          }
-                        >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <div className="mt-auto p-4 border-t border-sidebar-border">
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                <span>Logout</span>
-              </Button>
-            </div>
-          </SidebarContent>
-        </Sidebar>
-
-        <main className="flex-1 overflow-auto">
-          <div className="sticky top-0 z-10 bg-background border-b md:hidden p-3">
-            <SidebarTrigger />
-          </div>
-          {children}
-        </main>
+    <div className="flex min-h-screen overflow-hidden">
+      {/* Mobile Navbar */}
+      <div className="md:hidden fixed top-0 left-0 w-full p-3 flex justify-between items-center bg-[#0f2942] text-white z-50">
+        <h1 className="font-bold text-lg">American Shoe Express</h1>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 rounded-md hover:bg-[#1b3a5b] focus:outline-none"
+        >
+          {isOpen ? "✕" : "☰"}
+        </button>
       </div>
-    </SidebarProvider>
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed md:static top-0 left-0 bg-[#0f2942] text-white w-64 h-full md:h-auto flex flex-col transform transition-transform duration-300 z-40
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+      >
+        <div className="p-5 border-b border-[#1b3a5b] sticky top-0 bg-[#0f2942]">
+          <h2 className="text-2xl font-bold">MyShop</h2>
+        </div>
+
+        <nav className="flex-1 flex flex-col p-3 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? "bg-white text-[#0f2942] font-semibold"
+                    : "text-gray-300 hover:bg-[#1b3a5b] hover:text-white"
+                }`
+              }
+              onClick={() => setIsOpen(false)} // close menu on mobile
+            >
+              {item.icon}
+              {item.name}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-[#1b3a5b]">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-white hover:bg-[#1b3a5b]"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            <span>Logout</span>
+          </Button>
+        </div>
+      </aside>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Main Content Area */}
+      <main className="flex-1 bg-gray-50 min-h-screen overflow-y-auto p-6 md:ml-0 mt-12 md:mt-0">
+        {children}
+      </main>
+    </div>
   );
-}
+};
+
+export default AdminLayout;

@@ -3,33 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { DollarSign, TrendingUp, ShoppingCart } from "lucide-react";
+import { DollarSign, ShoppingCart } from "lucide-react";
 import axios from "axios";
-
-const USD_CONVERSION_RATE = 0.0923; // 1 GHS → USD approximate
 
 const Revenue = () => {
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [todayOrders, setTodayOrders] = useState(0);
   const [monthlyEarnings, setMonthlyEarnings] = useState(0);
   const [monthlyData, setMonthlyData] = useState<Array<{ month: string; earnings: number }>>([]);
+  const [exchangeRate, setExchangeRate] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+
+        // Fetch daily earnings/orders
         const dailyResponse = await axios.get("/daily-earnings-and-orders");
         if (dailyResponse.data) {
           setTodayEarnings(dailyResponse.data.totalEarnings || 0);
           setTodayOrders(dailyResponse.data.totalOrders || 0);
         }
 
+        // Fetch monthly earnings
         const monthlyResponse = await axios.get("/monthly-earnings-and-orders");
         if (monthlyResponse.data) {
           setMonthlyEarnings(monthlyResponse.data.totalEarnings || 0);
         }
 
+        // Fetch chart data
         const chartResponse = await axios.get("/month-by-month-earnings");
         if (chartResponse.data && chartResponse.data.data) {
           const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -45,6 +48,12 @@ const Revenue = () => {
 
           setMonthlyData(fullYearData);
         }
+
+        // Fetch live GHS → USD exchange rate
+        const rateResponse = await fetch("https://api.exchangerate.host/latest?base=GHS&symbols=USD");
+        const rateData = await rateResponse.json();
+        setExchangeRate(rateData.rates?.USD || 0);
+
       } catch (error) {
         console.error("Failed to fetch revenue data:", error);
       } finally {
@@ -55,8 +64,7 @@ const Revenue = () => {
     fetchData();
   }, []);
 
-  const todayEarningsUSD = (todayEarnings * USD_CONVERSION_RATE);
-  const monthlyEarningsUSD = (monthlyEarnings * USD_CONVERSION_RATE);
+  const convertToUSD = (ghsAmount: number) => exchangeRate ? (ghsAmount * exchangeRate).toFixed(2) : "0.00";
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8">
@@ -75,9 +83,7 @@ const Revenue = () => {
             <div className="text-2xl font-bold text-foreground">
               {isLoading ? "Loading..." : todayOrders.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Orders placed today
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Orders placed today</p>
           </CardContent>
         </Card>
 
@@ -88,11 +94,16 @@ const Revenue = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {isLoading ? "Loading..." : `₵${todayEarnings.toLocaleString()} (~$${todayEarningsUSD.toFixed(2)})`}
+              {isLoading 
+                ? "Loading..." 
+                : (
+                  <>
+                    ₵{todayEarnings.toLocaleString()} (~
+                    <span className="text-red-700">${convertToUSD(todayEarnings)}</span>)
+                  </>
+                )
+              }
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              
-            </p>
           </CardContent>
         </Card>
 
@@ -103,11 +114,17 @@ const Revenue = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {isLoading ? "Loading..." : `₵${monthlyEarnings.toLocaleString()} (~$${monthlyEarningsUSD.toFixed(2)})`}
+              {isLoading 
+                ? "Loading..." 
+                : (
+                  <>
+                    ₵{monthlyEarnings.toLocaleString()} (~
+                    <span className="text-red-700">${convertToUSD(monthlyEarnings)}</span>)
+                  </>
+                )
+              }
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              This month's earnings
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">This month's earnings</p>
           </CardContent>
         </Card>
       </div>
@@ -125,14 +142,8 @@ const Revenue = () => {
             <ResponsiveContainer width="100%" height={300} className="md:h-[350px]">
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="hsl(var(--muted-foreground))"
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  style={{ fontSize: '12px' }}
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }}
                   tickFormatter={(value) => `₵${value.toLocaleString()}`}
                 />
                 <Tooltip 
@@ -143,13 +154,7 @@ const Revenue = () => {
                   }}
                   formatter={(value: any) => [`₵${value.toLocaleString()}`, 'Earnings']}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="earnings" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
+                <Line type="monotone" dataKey="earnings" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: 'hsl(var(--primary))' }} />
               </LineChart>
             </ResponsiveContainer>
           )}

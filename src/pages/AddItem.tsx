@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react"; // added Loader2 icon
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/lib/axios";
 
@@ -20,6 +20,7 @@ const AddItem = () => {
   const [shoeStatus, setShoeStatus] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [images, setImages] = useState<Array<{ file: File; preview: string }>>([]);
+  const [loading, setLoading] = useState(false); // 🔹 loading state
   const { toast } = useToast();
 
   const genderOptions = ["Men", "Womens", "Unisex", "Children", "Teen"];
@@ -55,7 +56,6 @@ const AddItem = () => {
     );
   };
 
-  // radios but still store as array
   const selectShoeStatus = (status: string) => {
     setShoeStatus([status]);
   };
@@ -66,6 +66,7 @@ const AddItem = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // 🔹 start loading
 
     try {
       const formData = new FormData();
@@ -118,6 +119,8 @@ const AddItem = () => {
         description: error.response?.data?.message || "Failed to add item.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false); // 🔹 stop loading
     }
   };
 
@@ -158,65 +161,64 @@ const AddItem = () => {
           </div>
 
           <div className="flex gap-2">
-          <div className="grid gap-2">
-            <Label htmlFor="quantity">Quantity</Label>
-            <Input
-              id="quantity"
-              type="text"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="retailCost">Retail Cost (₵)</Label>
-            <Input
-              id="retailCost"
-              type="text"
-              value={retailCost}
-              onChange={(e) => setRetailCost(parseFloat(e.target.value) || 0)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="cost">Cost (₵)</Label>
-            <Input
-              id="cost"
-              type="text"
-              value={cost}
-              onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
-              required
-            />
-          </div>
-
-          </div>
-        <div className="flex gap-2">
-          <div className="grid gap-2">
-            <Label htmlFor="size">American Size</Label>
-            <Input
-              id="size"
-              value={size}
-              onChange={(e) => setSize(e.target.value)}
-              required
-              placeholder="e.g., 9, 10, M, L"
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="text"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="retailCost">Retail Cost (₵)</Label>
+              <Input
+                id="retailCost"
+                type="text"
+                value={retailCost}
+                onChange={(e) => setRetailCost(parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cost">Cost (₵)</Label>
+              <Input
+                id="cost"
+                type="text"
+                value={cost}
+                onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="GhanaSize">Ghana Size</Label>
-            <Input
-              id="GhanaSize"
-              value={GhanaSize}
-              onChange={(e) => setGhanaSize(e.target.value)}
-              placeholder="e.g., 42, 43"
-            />
+          <div className="flex gap-2">
+            <div className="grid gap-2">
+              <Label htmlFor="size">American Size</Label>
+              <Input
+                id="size"
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                required
+                placeholder="e.g., 9, 10, M, L"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="GhanaSize">Ghana Size</Label>
+              <Input
+                id="GhanaSize"
+                value={GhanaSize}
+                onChange={(e) => setGhanaSize(e.target.value)}
+                placeholder="e.g., 42, 43"
+              />
+            </div>
           </div>
-        </div>
         </div>
 
         {/* RIGHT SIDE */}
         <div className="space-y-6">
-          {/* Shoe Status (Radio) */}
           <div className="grid gap-2">
             <Label>Shoe Status</Label>
             {shoeStatusOptions.map((status) => (
@@ -236,7 +238,6 @@ const AddItem = () => {
             ))}
           </div>
 
-          {/* Type (Radio) */}
           <div className="grid gap-2">
             <Label>Type</Label>
             {typeOptions.map((type) => (
@@ -256,7 +257,6 @@ const AddItem = () => {
             ))}
           </div>
 
-          {/* Gender (checkboxes) */}
           <div className="grid gap-2">
             <Label>Gender</Label>
             {genderOptions.map((genderValue) => (
@@ -275,8 +275,6 @@ const AddItem = () => {
             ))}
           </div>
 
-          {/* Images */}
-          <div></div>
           <div className="grid gap-2">
             <Label htmlFor="image">Images</Label>
             <div className="flex flex-col gap-4">
@@ -328,8 +326,19 @@ const AddItem = () => {
         </div>
 
         <div className="md:col-span-2">
-          <Button type="submit" className="w-full">
-            Save Item
+          <Button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2"
+            disabled={loading} // 🔹 disable button while loading
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Item"
+            )}
           </Button>
         </div>
       </form>
