@@ -34,6 +34,7 @@ const Revenue = () => {
 
         // Fetch chart data
         const chartResponse = await axios.get("/month-by-month-earnings");
+        console.log(chartResponse)
         if (chartResponse.data && chartResponse.data.data) {
           const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           const apiData = chartResponse.data.data;
@@ -45,8 +46,8 @@ const Revenue = () => {
               earnings: apiItem?.earnings || apiItem?.totalEarnings || apiItem || 0
             };
           });
-
-          setMonthlyData(fullYearData);
+          console.log(fullYearData)
+          setMonthlyData(chartResponse.data.data);
         }
 
         // Fetch live GHS → USD exchange rate

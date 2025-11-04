@@ -45,6 +45,7 @@ interface Order {
   orderMode?: string;
   date: string;
   status: "Pending" | "Completed" | "Cancelled" | "Packaged" | "Shipped";
+  createdAt:Date
 }
 
 const OrdersPage = () => {
@@ -71,7 +72,7 @@ const OrdersPage = () => {
         // Normalize if necessary
         const formattedOrders = allOrders.map((order: any) => ({
           _id: order._id ?? "",
-          id: order.id ?? "",
+          id: order.orderId ?? "",
           name: order.name ?? "",
           phone: order.phone ?? "",
           items: order.items ?? [],
@@ -80,9 +81,11 @@ const OrdersPage = () => {
           orderMode: order.orderMode ?? "",
           date: order.date ?? new Date().toISOString(),
           status: order.status ?? "Pending",
+          createdAt:order.createdAt
         }));
 
         setOrders(formattedOrders);
+        console.log(response)
       } catch (error) {
         console.error("Failed to fetch orders:", error);
         setOrders([]);
@@ -97,6 +100,7 @@ const OrdersPage = () => {
           "https://api.exchangerate.host/latest?base=GHS&symbols=USD"
         );
         const data = await response.json();
+        console.log(data)
         setExchangeRate(data.rates.USD);
       } catch (error) {
         console.error("Failed to fetch exchange rate:", error);
@@ -178,7 +182,7 @@ const OrdersPage = () => {
           <p><strong>Location:</strong> ${order.location || "N/A"}</p>
           <p><strong>Order Mode:</strong> ${order.orderMode || "N/A"}</p>
           <p><strong>Status:</strong> ${order.status}</p>
-          <p><strong>Date:</strong> ${new Date(order.date).toLocaleString()}</p>
+          <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
           <table>
             <thead>
               <tr>
@@ -197,7 +201,7 @@ const OrdersPage = () => {
                 <td>${i.itemNumber}</td>
                 <td>${i.name}</td>
                 <td>${i.quantity}</td>
-                <td>${i.price.toFixed(2)}</td>
+                <td>${Number(i.price).toFixed(2)}</td>
                 <td>${(i.price * i.quantity).toFixed(2)}</td>
               </tr>`
                 )
@@ -408,7 +412,7 @@ const OrdersPage = () => {
                 <div className="flex justify-between">
                   <span className="font-medium">Date:</span>
                   <span>
-                    {new Date(selectedOrder.date).toLocaleString()}
+                    {new Date(selectedOrder.createdAt).toLocaleString()}
                   </span>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import {
   ShoppingCart,
   Boxes,
   MessageSquare,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,10 +52,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static top-0 left-0 bg-[#0f2942] text-white w-64 h-full md:h-auto flex flex-col transform transition-transform duration-300 z-40
+        className={`fixed top-0 left-0 h-screen w-64 bg-[#0f2942] text-white flex flex-col z-40 transform transition-transform duration-300
         ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
-        <div className="p-5 border-b border-[#1b3a5b] sticky top-0 bg-[#0f2942]">
+        <div className="p-5 border-b border-[#1b3a5b] bg-[#0f2942]">
           <h2 className="text-2xl font-bold">MyShop</h2>
         </div>
 
@@ -100,7 +100,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 bg-gray-50 min-h-screen overflow-y-auto p-6 md:ml-0 mt-12 md:mt-0">
+      <main className="flex-1 bg-gray-50 min-h-screen overflow-y-auto p-6 md:ml-64 mt-12 md:mt-0">
         {children}
       </main>
     </div>

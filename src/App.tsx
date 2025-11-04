@@ -11,15 +11,18 @@ import Orders from "./pages/Orders";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import CommentPage from "./pages/Feedback";
+import axio from "axios"
+import axios from "axios";
 
 const queryClient = new QueryClient();
-
+axios.defaults.baseURL="https://americanexpress-shoes-backend.onrender.com/api/v1"
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 const App = () => (
+  
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
