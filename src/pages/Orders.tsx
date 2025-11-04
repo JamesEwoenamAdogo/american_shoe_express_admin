@@ -147,17 +147,22 @@ const OrdersPage = () => {
 
   const convertToUSD = (value: number) =>
     exchangeRate ? (value * exchangeRate).toFixed(2) : "0.00";
+    const getStatusBadge = (status: Order["status"]) => {
+      const colorClasses: Record<string, string> = {
+        Pending: "bg-yellow-400 text-black",
+        Packaged: "bg-blue-500 text-white",
+        Shipped: "bg-green-500 text-white",
+      };
 
-  const getStatusBadge = (status: Order["status"]) => {
-    const variants: Record<string, string> = {
-      Completed: "default",
-      Pending: "secondary",
-      Cancelled: "destructive",
-      Packaged: "outline",
-      Shipped: "success",
+      return (
+        <span
+          className={`px-2 py-1 text-xs rounded-md font-semibold ${colorClasses[status]}`}
+        >
+          {status}
+        </span>
+      );
     };
-    return <Badge variant={variants[status] as any}>{status}</Badge>;
-  };
+
 
   const handlePrint = (order: Order) => {
     const printContent = `
@@ -223,11 +228,21 @@ const OrdersPage = () => {
     }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order["status"]) => {
+  const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+  try {
+    // Update UI immediately
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status } : o))
+      prev.map((o) => (o._id === orderId ? { ...o, status } : o))
     );
-  };
+
+    // Send update to backend
+    await axios.put(`/update-order-status/${orderId}/${status}`);
+
+  } catch (error) {
+    console.error("Failed to update status:", error);
+  }
+};
+
 
   if (loading) {
     return (
@@ -340,23 +355,22 @@ const OrdersPage = () => {
                     <TableCell>₵{order.total.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell className="flex gap-2">
-                      <Select
-                        onValueChange={(val) =>
-                          updateOrderStatus(order.id, val as Order["status"])
-                        }
-                        defaultValue={order.status}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder={order.status} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Packaged">Packaged</SelectItem>
-                          <SelectItem value="Shipped">Shipped</SelectItem>
-                          <SelectItem value="Completed">Completed</SelectItem>
-                          <SelectItem value="Cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <Select
+                      onValueChange={(val) =>
+                        updateOrderStatus(order._id, val as Order["status"])
+                      }
+                      defaultValue={order.status}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder={order.status} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Packaged">Packaged</SelectItem>
+                        <SelectItem value="Shipped">Shipped</SelectItem>
+                      </SelectContent>
+                    </Select>
+
                       <Button
                         size="sm"
                         onClick={() => setSelectedOrder(order)}
