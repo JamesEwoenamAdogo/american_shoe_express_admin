@@ -7,6 +7,7 @@ interface Message {
   name: string;
   phoneNumber: string;
   comment: string;
+  email:string;
   createdAt?: string; // optional if your backend returns timestamp
 }
 
@@ -64,6 +65,7 @@ const CommentPage: React.FC = () => {
               >
                 <h2 className="font-semibold text-lg">{msg.name}</h2>
                 <p className="text-sm text-gray-500 mb-2">{msg.phoneNumber}</p>
+                <p className="text-sm text-gray-500 mb-2">{msg.email}</p>
                 <p className="text-gray-700">{msg.comment}</p>
                 {msg.createdAt && (
                   <p className="text-xs text-gray-400 mt-2">
