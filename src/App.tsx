@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import CommentPage from "./pages/Feedback";
 import axio from "axios"
 import axios from "axios";
+import HeroImagesPage from "./pages/HeroImagesPage";
 
 const queryClient = new QueryClient();
 axios.defaults.baseURL="https://americanexpress-shoes-backend.onrender.com/api/v1"
@@ -35,6 +36,7 @@ const App = () => (
           <Route element={<ProtectedRoute><AdminLayout><AddItem /></AdminLayout></ProtectedRoute>} path="/add-item" />
           <Route element={<ProtectedRoute><AdminLayout><AllItems /></AdminLayout></ProtectedRoute>} path="/all-items" />
           <Route element={<ProtectedRoute><AdminLayout><CommentPage /></AdminLayout></ProtectedRoute>} path="/messages" />
+          <Route element={<ProtectedRoute><AdminLayout><HeroImagesPage /></AdminLayout></ProtectedRoute>} path="/hero" />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

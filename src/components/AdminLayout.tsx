@@ -6,10 +6,12 @@ import {
   Boxes,
   MessageSquare,
   LogOut,
+  Image
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -26,6 +28,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { name: "Add Item", icon: <ShoppingCart className="w-5 h-5" />, path: "/add-item" },
     { name: "All Items", icon: <Boxes className="w-5 h-5" />, path: "/all-items" },
     { name: "Messages", icon: <MessageSquare className="w-5 h-5" />, path: "/messages" },
+    { name: "Hero Image", icon: <Image className="w-5 h-5" />, path: "/hero" },
   ];
 
   const handleLogout = () => {
