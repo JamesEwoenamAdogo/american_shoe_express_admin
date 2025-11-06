@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://americanexpress-shoes-backend-2.onrender.com/v1',
+  baseURL: 'https://americanexpress-shoes-backend-2.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
