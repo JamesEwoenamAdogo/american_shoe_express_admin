@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, Loader2 } from "lucide-react"; // added Loader2 icon
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/lib/axios";
+import axios from "axios"
 
 const AddItem = () => {
   const [name, setName] = useState("");
@@ -83,7 +84,7 @@ const AddItem = () => {
       formData.append("type", JSON.stringify(selectedTypes));
       images.forEach((img) => formData.append("images", img.file));
 
-      const response = await axiosInstance.post("/add-shoe", formData, {
+      const response = await axios.post("/add-shoe", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
